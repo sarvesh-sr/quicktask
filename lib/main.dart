@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
+      debugShowCheckedModeBanner: false,
       home: const MyHomePage(),
     );
   }
@@ -45,20 +46,6 @@ class _MyHomePageState extends State<MyHomePage> {
   //       taskName is String
   //       isCompleted is bool
 
-  // To get the nextNum of todo for taskName
-  int _getNextNum() {
-    if (box.isEmpty) return 1;
-
-    int maxKey = 0;
-    for (int key in box.keys) {
-      if (key > maxKey) {
-        maxKey = key;
-      }
-    }
-
-    return maxKey + 1;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,37 +59,120 @@ class _MyHomePageState extends State<MyHomePage> {
         itemBuilder: (context, index) {
           final key = box.keyAt(index);
           String taskName = box.get(key)[0];
-          bool isTaskCompleted = box.get(key)[1];
+          bool taskStatus = box.get(key)[1];
 
-          return CheckboxListTile(
-            controlAffinity: ListTileControlAffinity.leading,
-            secondary: IconButton(
+          // tapping the tile/task should lead to different screen
+          // for that, onTap must be customized
+          // hence ListTile is used instead of CheckboxListTile
+
+          return ListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 9),
+            title: Text(taskName),
+            leading: Checkbox(
+              value: taskStatus,
+              onChanged: (value) {
+                setState(() {
+                  box.put(key, [taskName, value!]);
+                });
+              },
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.close),
               onPressed: () {
                 setState(() {
                   box.delete(key);
                 });
               },
-              icon: Icon(Icons.close),
             ),
-            title: Text(taskName),
-            value: isTaskCompleted,
-            onChanged: (value) {
-              setState(() {
-                box.put(key, [taskName, value!]);
-              });
+
+            onTap: () async {
+              // used async/await because we need to wait for the user to return, to refresh the state/screen
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => EditTaskPage(taskIndex: key, box: box),
+                ),
+              );
+              setState(() {}); // refresh screen after possible updates
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           setState(() {
-            int next = _getNextNum();
-            box.put(next, ['todo $next', false]);
+            box.add(['new task', false]);
           });
         },
-        tooltip: 'Add a todo',
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text(
+          "New Task",
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+}
+
+class EditTaskPage extends StatefulWidget {
+  final int taskIndex;
+  final Box box;
+
+  const EditTaskPage({super.key, required this.taskIndex, required this.box});
+
+  @override
+  State<EditTaskPage> createState() => _EditTaskPageState();
+}
+
+class _EditTaskPageState extends State<EditTaskPage> {
+  final controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    List taskData = widget.box.get(widget.taskIndex);
+    controller.text = taskData[0];
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text("Edit Task", style: TextStyle(fontWeight: FontWeight.w500)),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(36.0),
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: "Edit task name",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                List taskData = widget.box.get(widget.taskIndex);
+                taskData[0] = controller.text;
+                widget.box.put(widget.taskIndex, taskData);
+                Navigator.pop(context);
+              }
+            },
+            child: Text("Save"),
+          ),
+        ],
       ),
     );
   }
