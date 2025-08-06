@@ -15,10 +15,23 @@ void main() async {
   runApp(MyApp(box: box));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final Box box;
 
   const MyApp({super.key, required this.box});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool isDark = false;
+
+  void toggleTheme() {
+    setState(() {
+      isDark = !isDark;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +40,15 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+      ),
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       debugShowCheckedModeBanner: false,
-      home: MyHomePage(box: box),
+      home: MyHomePage(box: widget.box, onThemeToggle: toggleTheme),
     );
   }
 }

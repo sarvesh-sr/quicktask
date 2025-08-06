@@ -4,7 +4,9 @@ import 'editpage.dart';
 
 class MyHomePage extends StatefulWidget {
   final Box box;
-  const MyHomePage({super.key, required this.box});
+  final VoidCallback onThemeToggle;
+
+  const MyHomePage({super.key, required this.box, required this.onThemeToggle});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -23,9 +25,22 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text('QuickTask', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: widget.onThemeToggle,
+            icon: Icon(
+              Theme.brightnessOf(context) == Brightness.light
+                  ? Icons.dark_mode
+                  : Icons.light_mode,
+            ),
+          ),
+          SizedBox(width: 5),
+        ],
       ),
-      body: ListView.builder(
+      body: ListView.separated(
         itemCount: widget.box.length,
+        separatorBuilder: (context, index) =>
+            Divider(height: 1, thickness: 0.5, color: Colors.grey[400]),
         itemBuilder: (context, index) {
           final key = widget.box.keyAt(index);
           String taskName = widget.box.get(key)[0];
@@ -37,7 +52,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
           return ListTile(
             contentPadding: EdgeInsets.symmetric(horizontal: 9),
-            title: Text(taskName),
+            title: Text(
+              taskName,
+              style: TextStyle(
+                decoration: taskStatus == true
+                    ? TextDecoration.lineThrough
+                    : TextDecoration.none,
+              ),
+            ),
             leading: Checkbox(
               value: taskStatus,
               onChanged: (value) {
